@@ -1,10 +1,15 @@
 from celery import shared_task
+import threading
 from .receivers import log_create, log_update, log_delete
+
+
+threadlocal = threading.local()
 
 
 @shared_task
 def log_create_task(*args, **kwargs):
-    log_create(*args, **kwargs)
+    remote_addr = threadlocal.auditlog['remote_addr']
+    log_create(*args, remote_addr=remote_addr, **kwargs)
 
 
 @shared_task
