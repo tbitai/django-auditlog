@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.db.models import Model
 from django.utils.six import iteritems
-from django.conf import settings
 
 
 class AuditlogModelRegistry(object):
@@ -11,20 +10,17 @@ class AuditlogModelRegistry(object):
     A registry that keeps track of the models that use Auditlog to track changes.
     """
     def __init__(self, create=True, update=True, delete=True, custom=None):
-        from auditlog.receivers import log_create_receiver, log_update, log_delete
-        use_celery = getattr(settings, 'AUDITLOG_USE_CELERY', False)
-        if use_celery:
-            from .tasks import log_create_async_receiver, log_update_apply_async, log_delete_apply_async
+        from auditlog.receivers import log_create, log_update, log_delete
 
         self._registry = {}
         self._signals = {}
 
         if create:
-            self._signals[post_save] = log_create_receiver if not use_celery else log_create_async_receiver
+            self._signals[post_save] = log_create
         if update:
-            self._signals[pre_save] = log_update if not use_celery else log_update_apply_async
+            self._signals[pre_save] = log_update
         if delete:
-            self._signals[post_delete] = log_delete if not use_celery else log_delete_apply_async
+            self._signals[post_delete] = log_delete
 
         if custom is not None:
             self._signals.update(custom)

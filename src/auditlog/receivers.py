@@ -1,30 +1,40 @@
 from __future__ import unicode_literals
 
+import asyncio
 import json
+from functools import partial
+from django.conf import settings
 
 from auditlog.diff import model_instance_diff
 from auditlog.models import LogEntry
 
 
-def log_create(instance, created, **kwargs):
+async_mode = getattr(settings, 'AUDITLOG_ASYNC_MODE', False)
+loop = asyncio.get_event_loop()
+
+
+def _run_async(func, *args, **kwargs):
+    loop.run_in_executor(None, partial(func, *args, **kwargs))
+
+
+def _log_create(instance, created):
     if created:
         changes = model_instance_diff(None, instance)
 
         log_entry = LogEntry.objects.log_create(
             instance,
             action=LogEntry.Action.CREATE,
-            changes=json.dumps(changes),
-            **kwargs
+            changes=json.dumps(changes)
         )
 
 
-def log_create_receiver(sender, instance, created, **kwargs):
+def log_create(sender, instance, created, **kwargs):
     """
     Signal receiver that creates a log entry when a model instance is first saved to the database.
 
     Direct use is discouraged, connect your model through :py:func:`auditlog.registry.register` instead.
     """
-    log_create(instance, created)
+    _log_create(instance, created) if not async_mode else _run_async(_log_create, instance, created)
 
 
 def log_update(sender, instance, **kwargs):
