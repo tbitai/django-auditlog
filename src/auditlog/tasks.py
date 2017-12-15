@@ -7,9 +7,9 @@ threadlocal = threading.local()
 
 
 @shared_task
-def log_create_task(*args, **kwargs):
+def log_create_task(sender, instance, created, **kwargs):
     remote_addr = threadlocal.auditlog['remote_addr']
-    log_create(*args, remote_addr=remote_addr, **kwargs)
+    log_create(instance, created, remote_addr=remote_addr)
 
 
 @shared_task
@@ -31,6 +31,6 @@ def _get_apply_async(task):
     return ret
 
 
-log_create_apply_async = _get_apply_async(log_create_task)
+log_create_async_receiver = _get_apply_async(log_create_task)
 log_update_apply_async = _get_apply_async(log_update_task)
 log_delete_apply_async = _get_apply_async(log_delete_task)

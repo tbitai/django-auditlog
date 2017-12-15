@@ -11,16 +11,16 @@ class AuditlogModelRegistry(object):
     A registry that keeps track of the models that use Auditlog to track changes.
     """
     def __init__(self, create=True, update=True, delete=True, custom=None):
-        from auditlog.receivers import log_create, log_update, log_delete
+        from auditlog.receivers import log_create_receiver, log_update, log_delete
         use_celery = getattr(settings, 'AUDITLOG_USE_CELERY', False)
         if use_celery:
-            from .tasks import log_create_apply_async, log_update_apply_async, log_delete_apply_async
+            from .tasks import log_create_async_receiver, log_update_apply_async, log_delete_apply_async
 
         self._registry = {}
         self._signals = {}
 
         if create:
-            self._signals[post_save] = log_create if not use_celery else log_create_apply_async
+            self._signals[post_save] = log_create_receiver if not use_celery else log_create_async_receiver
         if update:
             self._signals[pre_save] = log_update if not use_celery else log_update_apply_async
         if delete:

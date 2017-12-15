@@ -6,12 +6,7 @@ from auditlog.diff import model_instance_diff
 from auditlog.models import LogEntry
 
 
-def log_create(sender, instance, created, **kwargs):
-    """
-    Signal receiver that creates a log entry when a model instance is first saved to the database.
-
-    Direct use is discouraged, connect your model through :py:func:`auditlog.registry.register` instead.
-    """
+def log_create(instance, created, **kwargs):
     if created:
         changes = model_instance_diff(None, instance)
 
@@ -19,7 +14,17 @@ def log_create(sender, instance, created, **kwargs):
             instance,
             action=LogEntry.Action.CREATE,
             changes=json.dumps(changes),
+            **kwargs
         )
+
+
+def log_create_receiver(sender, instance, created, **kwargs):
+    """
+    Signal receiver that creates a log entry when a model instance is first saved to the database.
+
+    Direct use is discouraged, connect your model through :py:func:`auditlog.registry.register` instead.
+    """
+    log_create(instance, created)
 
 
 def log_update(sender, instance, **kwargs):
